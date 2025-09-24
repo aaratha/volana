@@ -1,3 +1,6 @@
 [submodule "external/miniaudio"]
 	path = external/miniaudio
 	url = https://github.com/mackron/miniaudio
+[submodule "external/lua"]
+	path = external/lua
+	url = https://github.com/lua/lua
