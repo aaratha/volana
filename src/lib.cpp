@@ -1,12 +1,21 @@
 #include "audio.h"
+#include "lua_bindings.h"
 #include "miniaudio.h"
 #include "nodes.h"
+#include "repl.h"
 #include "utils.h"
-#include <thread>
+
+// A simple function that Lua can call
+int cpp_print(lua_State *L) {
+  const char *msg = lua_tostring(L, 1);
+  std::cout << "[Lua] " << msg << std::endl;
+  return 0; // number of return values
+}
 
 int main() {
-  AudioManager am;
+  REPL repl;
   am.init();
+  repl.init();
 
   // Create nodes
   auto osc = Oscillator::init(0.2f, 440.0f);
@@ -22,6 +31,10 @@ int main() {
   // Add dependency in graph (optional, for topological sort)
   am.addEdge(lfoNode, oscNode);
 
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  repl.bind("cpp_print", cpp_print);
+  repl.bind("Oscillator", lua_create_oscillator);
+  repl.loop();
+
   am.exit();
+  repl.exit();
 }

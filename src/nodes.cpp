@@ -4,6 +4,7 @@ std::unique_ptr<Oscillator> Oscillator::init(float amp_, float freq_) {
   auto osc = std::make_unique<Oscillator>();
   osc->amp.store(amp_);
   osc->freq.store(freq_);
+  std::cout << "new Oscillator: amp=" << amp_ << " freq=" << freq_ << std::endl;
   return osc;
 }
 
