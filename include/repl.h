@@ -11,7 +11,7 @@ extern "C" {
 
 class REPL {
   AudioManager *am;
-  lua_State *L = nullptr;
+  lua_State *L;
 
 public:
   REPL() = default;
@@ -23,6 +23,8 @@ public:
 
   // Run a Lua string
   void run(const std::string &code);
+
+  void run_file(const std::string &filename);
 
   // REPL loop
   void loop();

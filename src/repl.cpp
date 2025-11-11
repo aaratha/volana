@@ -21,11 +21,18 @@ void REPL::run(const std::string &code) {
   }
 }
 
+void REPL::run_file(const std::string &filename) {
+  if (luaL_loadfile(L, filename.c_str()) || lua_pcall(L, 0, 0, 0)) {
+    std::cerr << "Lua error: " << lua_tostring(L, -1) << std::endl;
+    lua_pop(L, 1);
+  }
+}
+
 // REPL loop
 void REPL::loop() {
   std::string line;
   while (true) {
-    std::cout << "> ";
+    std::cout << ">> ";
     if (!std::getline(std::cin, line))
       break;
     if (line == "exit")
