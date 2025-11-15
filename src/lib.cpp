@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
 
   repl.bind("cpp_print", cpp_print);
   repl.bind("Oscillator", lua_create_oscillator);
+  repl.bind("LFO", lua_create_lfo);
 
   if (argc > 1) {
     // A file path was provided, so run it and exit

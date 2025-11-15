@@ -1,5 +1,8 @@
 -- create an oscillator
-osc1 = Oscillator({ freq = 220, amp = 0.1, type = "sine" })
+osc1 = Oscillator({ freq = 440, amp = 0.1 }) --, type = "sine" })
+osc2 = Oscillator(0.2, 220)
+
+lfo1 = LFO(440, 40, 3)
 
 -- -- create a voice
 -- arp = Voice({ osc = osc1, pattern = { "C3", "E3", "G3", "B3" } })
