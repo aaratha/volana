@@ -1,10 +1,14 @@
 #include "repl.h"
+#include "lua_bindings.h"
 
 REPL::~REPL() { exit(); }
 
 void REPL::init() {
   L = luaL_newstate();
   luaL_openlibs(L);
+
+  register_oscillator(L);
+  register_lfo(L);
 }
 
 void REPL::exit() {

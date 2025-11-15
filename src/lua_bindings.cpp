@@ -78,7 +78,7 @@ int lua_create_lfo(lua_State *L) {
     }
   }
 
-  auto lfo = LFO::init(amp, freq);
+  auto lfo = LFO::init(base, amp, freq);
 
   LFO **udata = (LFO **)lua_newuserdata(L, sizeof(LFO *));
   *udata = lfo.get();
@@ -89,4 +89,86 @@ int lua_create_lfo(lua_State *L) {
   am.addNode(std::move(lfo));
 
   return 1;
+}
+
+int lua_osc_index(lua_State *L) {
+  Oscillator **osc_ud = (Oscillator **)luaL_checkudata(L, 1, "Oscillator");
+  Oscillator *osc = *osc_ud;
+
+  const char *key = lua_tostring(L, 2);
+
+  if (strcmp(key, "freq") == 0) {
+    std::atomic<float> *ptr = &osc->freq;
+    lua_pushlightuserdata(L, ptr); // push as lightuserdata
+    return 1;
+  }
+
+  if (strcmp(key, "amp") == 0) {
+    std::atomic<float> *ptr = &osc->amp;
+    lua_pushlightuserdata(L, ptr);
+    return 1;
+  }
+
+  return 0;
+}
+
+int lua_lfo_index(lua_State *L) {
+  LFO **lfo_ud = (LFO **)luaL_checkudata(L, 1, "LFO");
+  LFO *lfo = *lfo_ud;
+
+  const char *key = lua_tostring(L, 2);
+
+  // field access
+
+  if (strcmp(key, "base") == 0) {
+    lua_pushlightuserdata(L, &lfo->base); // return atomic pointer
+    return 1;
+  }
+
+  if (strcmp(key, "amp") == 0) {
+    lua_pushlightuserdata(L, &lfo->amp); // return atomic pointer
+    return 1;
+  }
+
+  if (strcmp(key, "freq") == 0) {
+    lua_pushlightuserdata(L, &lfo->freq); // return atomic pointer
+    return 1;
+  }
+
+  // method access
+  if (strcmp(key, "connect") == 0) {
+    lua_pushcfunction(L, lua_lfo_connect);
+    return 1;
+  }
+
+  return 0; // key not found
+}
+
+int lua_lfo_connect(lua_State *L) {
+  LFO **lfo_ud = (LFO **)luaL_checkudata(L, 1, "LFO");
+  LFO *lfo = *lfo_ud;
+
+  std::atomic<float> *target = (std::atomic<float> *)lua_touserdata(L, 2);
+  if (!target)
+    return luaL_error(L, "Expected atomic<float>* target to connect");
+
+  lfo->targets.push_back(target);
+  return 0;
+}
+
+void register_oscillator(lua_State *L) {
+  luaL_newmetatable(L, "Oscillator");
+  lua_pushcfunction(L, lua_osc_index);
+  lua_setfield(L, -2, "__index");
+  lua_pop(L, 1);
+}
+
+void register_lfo(lua_State *L) {
+  luaL_newmetatable(L, "LFO");
+
+  // set __index to our function
+  lua_pushcfunction(L, lua_lfo_index);
+  lua_setfield(L, -2, "__index");
+
+  lua_pop(L, 1); // pop metatable
 }

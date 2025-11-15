@@ -3,6 +3,16 @@ osc1 = Oscillator({ freq = 440, amp = 0.1 }) --, type = "sine" })
 osc2 = Oscillator(0.2, 220)
 
 lfo1 = LFO(440, 40, 3)
+lfo1:connect(osc1.freq)
+
+lfo2 = LFO(220, 40, 1)
+lfo2:connect(osc2.freq)
+
+lfo3 = LFO(3, 3, 1)
+lfo3:connect(lfo1.freq)
+
+lfo4 = LFO(440, 20, 20)
+lfo4:connect(lfo1.base)
 
 -- -- create a voice
 -- arp = Voice({ osc = osc1, pattern = { "C3", "E3", "G3", "B3" } })
