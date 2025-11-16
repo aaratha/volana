@@ -1,20 +1,39 @@
 -- create an oscillator
-local osc1 = Oscillator({ freq = 440, amp = 0.1 }) --, type = "sine" })
-local osc2 = Oscillator(0.2, 220)
+local osc1 = Oscillator({ freq = 220, amp = 0.1, type = Saw }) --, type = "sine" })
+local osc2 = Oscillator(0.1, 220)
 
-local lfo1 = LFO(440, 40, 3)
-lfo1:connect(osc1.freq)
+local lfo1 = LFO(220, 30, 2)
+lfo1:mod(osc2, "freq")
 
-local lfo2 = LFO(220, 40, 1)
-lfo2:connect(osc2.freq)
+local filter = Filter({ q = 2 })
+osc1:pipe(filter)
 
-local lfo3 = LFO(3, 3, 1)
-lfo3:connect(lfo1.freq)
+local lfo2 = LFO(1000, 700, 0.25)
+lfo2:mod(filter, "cutoff")
 
-local lfo4 = LFO(440, 20, 20)
-lfo4:connect(lfo1.base)
-
-lfo4.freq = 10
+-- local osc1 = Oscillator({ freq = 440, amp = 0.1, type = Saw }) --, type = "sine" })
+-- local osc2 = Oscillator(0.2, 220)
+--
+-- local lfo1 = LFO(440, 40, 3)
+-- lfo1:mod(osc1, "freq")
+--
+-- local lfo2 = LFO(220, 40, 1)
+-- lfo2:mod(osc2, "freq")
+--
+-- local lfo3 = LFO(3, 3, 1)
+-- lfo3:mod(lfo1, "freq")
+--
+-- local lfo4 = LFO(440, 20, 20)
+-- lfo4:mod(lfo1, "base")
+--
+-- lfo4.freq = 10
+--
+-- -- filtering
+-- local filter = Filter({ cutoff = 1000, q = 6 })
+-- osc1:pipe(filter)
+--
+-- local lfo5 = LFO(500, 400, 1)
+-- lfo5:mod(filter, "cutoff")
 
 -- complete usage example
 -- -- create a voice

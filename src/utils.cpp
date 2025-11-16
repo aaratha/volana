@@ -1,6 +1,8 @@
 #include "utils.h"
 
-GraphNode::GraphNode(std::unique_ptr<Node> data_) : data(std::move(data_)) {}
+GraphNode::GraphNode(std::unique_ptr<Node> data_) : data(std::move(data_)) {
+  data->owner = this; // set owner pointer
+}
 
 GraphNode *Graph::addNode(std::unique_ptr<Node> data) {
   nodes.push_back(std::make_unique<GraphNode>(std::move(data)));

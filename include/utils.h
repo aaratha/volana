@@ -11,10 +11,19 @@
 #define DEVICE_FORMAT ma_format_f32
 #define DEVICE_CHANNELS 2
 
+enum class OscType : int { Sine = 0, Saw = 1, Square = 2, Triangle = 3 };
+
 // ---------------- Node base ----------------
+
+class GraphNode;
+
 struct Node {
   virtual ~Node() = default;
-  virtual void update() = 0; // pure virtual
+  virtual void update() = 0;  // pure virtual
+  GraphNode *owner = nullptr; // automatically set when added to graph
+
+  std::atomic<float> out{0.0f};
+  bool audioOut = false; // whether this node contributes to final audio
 };
 
 // ---------------- GraphNode ----------------

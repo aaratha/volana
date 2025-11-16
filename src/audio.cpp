@@ -18,10 +18,11 @@ void AudioManager::dataCallback(ma_device *pDevice, void *pOutput,
     }
 
     // Mix or collect samples here
+
     float sample = 0.0f;
     for (auto *node : sortedNodes) {
-      if (auto *osc = dynamic_cast<Oscillator *>(node->data.get())) {
-        sample += osc->out.load(std::memory_order_relaxed);
+      if (node->data->audioOut) {
+        sample += node->data->out.load(std::memory_order_relaxed);
       }
     }
 

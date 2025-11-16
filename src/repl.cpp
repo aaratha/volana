@@ -9,6 +9,8 @@ void REPL::init() {
 
   register_oscillator(L);
   register_lfo(L);
+  register_filter(L);
+  register_osc_types(L);
 }
 
 void REPL::exit() {

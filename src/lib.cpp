@@ -24,17 +24,26 @@ int main(int argc, char **argv) {
   // auto lfo = LFO::init(440.0f, 50.0f, 100.0f);
   // auto *lfoNode = am.addNode(std::move(lfo));
   //
-  // // Wire: Envelope → Oscillator amplitude
+  // // Wire: LFO -> Oscillator amplitude
   // auto *oscData = static_cast<Oscillator *>(oscNode->data.get());
   // auto *lfoData = static_cast<LFO *>(lfoNode->data.get());
   // lfoData->targets.push_back(&oscData->freq);
   //
+  // // Wire: Oscillator out  -> filter out
+  // auto filter = Filter::init(1000.0f, 1.0f);
+  // auto *filterNode = am.addNode(std::move(filter));
+  // auto *filterData = static_cast<Filter *>(filterNode->data.get());
+  // filterData->inputs.push_back(&oscData->out);
+  // oscData->audioOut = false;
+  //
   // // Add dependency in graph (optional, for topological sort)
   // am.addEdge(lfoNode, oscNode);
+  // am.addEdge(oscNode, filterNode);
 
   repl.bind("cpp_print", cpp_print);
   repl.bind("Oscillator", lua_create_oscillator);
   repl.bind("LFO", lua_create_lfo);
+  repl.bind("Filter", lua_create_filter);
 
   if (argc > 1) {
     // A file path was provided, so run it and exit
