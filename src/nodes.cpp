@@ -47,6 +47,9 @@ std::unique_ptr<LFO> LFO::init(float base_, float amp_, float freq_) {
   lfo->amp.store(amp_);
   lfo->freq.store(freq_);
   lfo->audioOut = false;
+
+  std::cout << "new LFO: base =" << base_ << " amp=" << amp_
+            << " freq=" << freq_ << std::endl;
   return lfo;
 }
 
@@ -70,7 +73,7 @@ std::unique_ptr<Filter> Filter::init(float cutoff_, float q_) {
   filter->cutoff.store(cutoff_);
   filter->q.store(q_);
   filter->audioOut = true;
-
+  std::cout << "new Filter: cutoff=" << cutoff_ << " q=" << q_ << std::endl;
   return filter;
 }
 

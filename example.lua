@@ -1,15 +1,15 @@
 -- create an oscillator
-local osc1 = Oscillator({ freq = 220, amp = 0.1, type = Saw }) --, type = "sine" })
-local osc2 = Oscillator(0.1, 220)
+Osc1 = Oscillator({ freq = 220, amp = 0.1, type = Saw }) --, type = "sine" })
+Osc2 = Oscillator(0.1, 220)
 
-local lfo1 = LFO(220, 30, 2)
-lfo1:mod(osc2, "freq")
+Lfo1 = LFO(220, 30, 2)
+Lfo1:mod(Osc2, "freq")
 
-local filter = Filter({ q = 2 })
-osc1:pipe(filter)
+Filter = Filter({ q = 2 })
+Osc1:pipe(Filter)
 
-local lfo2 = LFO(1000, 700, 0.25)
-lfo2:mod(filter, "cutoff")
+Lfo2 = LFO(1000, 700, 0.25)
+Lfo2:mod(Filter, "cutoff")
 
 -- local osc1 = Oscillator({ freq = 440, amp = 0.1, type = Saw }) --, type = "sine" })
 -- local osc2 = Oscillator(0.2, 220)
