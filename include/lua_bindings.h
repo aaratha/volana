@@ -13,6 +13,10 @@ int lua_lfo_index(lua_State *L);
 
 int lua_lfo_connect(lua_State *L);
 
+int lua_osc_newindex(lua_State *L);
+
+int lua_lfo_newindex(lua_State *L);
+
 void register_oscillator(lua_State *L);
 
 void register_lfo(lua_State *L);

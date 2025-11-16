@@ -156,10 +156,67 @@ int lua_lfo_connect(lua_State *L) {
   return 0;
 }
 
+int lua_osc_newindex(lua_State *L) {
+  LFO **osc_ud = (LFO **)luaL_checkudata(L, 1, "Oscillator");
+  LFO *osc = *osc_ud;
+
+  const char *key = lua_tostring(L, 2);
+
+  if (strcmp(key, "freq") == 0) {
+    std::atomic<float> *ptr = &osc->freq;
+    float value = luaL_checknumber(L, 3);
+    ptr->store(value);
+    return 0;
+  }
+
+  if (strcmp(key, "amp") == 0) {
+    std::atomic<float> *ptr = &osc->amp;
+    float value = luaL_checknumber(L, 3);
+    ptr->store(value);
+    return 0;
+  }
+
+  return luaL_error(L, "Unknown field %s", key);
+}
+
+int lua_lfo_newindex(lua_State *L) {
+  LFO **lfo_ud = (LFO **)luaL_checkudata(L, 1, "LFO");
+  LFO *lfo = *lfo_ud;
+
+  const char *key = lua_tostring(L, 2);
+
+  if (strcmp(key, "freq") == 0) {
+    std::atomic<float> *ptr = &lfo->freq;
+    float value = luaL_checknumber(L, 3);
+    ptr->store(value);
+    return 0;
+  }
+
+  if (strcmp(key, "amp") == 0) {
+    std::atomic<float> *ptr = &lfo->amp;
+    float value = luaL_checknumber(L, 3);
+    ptr->store(value);
+    return 0;
+  }
+
+  if (strcmp(key, "base") == 0) {
+    lfo->base = luaL_checknumber(L, 3);
+    return 0;
+  }
+
+  return luaL_error(L, "Unknown field %s", key);
+}
+
 void register_oscillator(lua_State *L) {
   luaL_newmetatable(L, "Oscillator");
+
   lua_pushcfunction(L, lua_osc_index);
   lua_setfield(L, -2, "__index");
+
+  // __newindex for real-time updates
+  lua_pushcfunction(L, lua_osc_newindex);
+  lua_setfield(L, -2, "__newindex");
+
   lua_pop(L, 1);
 }
 
@@ -169,6 +226,10 @@ void register_lfo(lua_State *L) {
   // set __index to our function
   lua_pushcfunction(L, lua_lfo_index);
   lua_setfield(L, -2, "__index");
+
+  // __newindex for real-time updates
+  lua_pushcfunction(L, lua_lfo_newindex);
+  lua_setfield(L, -2, "__newindex");
 
   lua_pop(L, 1); // pop metatable
 }

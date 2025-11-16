@@ -14,6 +14,8 @@ lfo3:connect(lfo1.freq)
 lfo4 = LFO(440, 20, 20)
 lfo4:connect(lfo1.base)
 
+lfo4.freq = 10
+
 -- -- create a voice
 -- arp = Voice({ osc = osc1, pattern = { "C3", "E3", "G3", "B3" } })
 --
