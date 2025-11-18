@@ -1,13 +1,14 @@
 -- Oscillator types
 Sine = 0
 Saw = 1
+InvSaw = 2
 Square = 2
 Triangle = 3
 
 ---@class Oscillator
 ---@field freq lightuserdata
 ---@field amp lightuserdata
----@field type integer One of Sine, Saw, Square, Triangle
+---@field type integer One of Sine, Saw, InvSaw, Square, Triangle
 ---@field audioOut boolean
 Oscillator = {}
 

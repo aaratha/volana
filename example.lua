@@ -1,15 +1,15 @@
 -- create an oscillator
-Osc1 = Oscillator({ freq = 220, amp = 0.1, type = Saw }) --, type = "sine" })
-Osc2 = Oscillator(0.1, 220)
-
-Lfo1 = LFO(220, 30, 2)
-Lfo1:mod(Osc2, "freq")
-
-Filter = Filter({ q = 2 })
-Osc1:pipe(Filter)
-
-Lfo2 = LFO(1000, 700, 0.25)
-Lfo2:mod(Filter, "cutoff")
+-- Osc1 = Oscillator({ freq = 220, amp = 0.1, type = Saw }) --, type = "sine" })
+-- Osc2 = Oscillator(0.1, 220)
+--
+-- Lfo1 = LFO(220, 30, 2)
+-- Lfo1:mod(Osc2, "freq")
+--
+-- Filter = Filter({ q = 2 })
+-- Osc1:pipe(Filter)
+--
+-- Lfo2 = LFO(1000, 700, 0.25)
+-- Lfo2:mod(Filter, "cutoff")
 
 -- Osc1 = Oscillator(0.1, 220)
 -- Osc2 = Oscillator(0.1, 440)
@@ -108,3 +108,21 @@ Lfo2:mod(Filter, "cutoff")
 --   .cue("x")
 --
 -- pattern("x x x x").play()
+
+o = osc(0.1, 440, Saw)
+x = osc(0.1, 220, Sine)
+l1 = lfo(440, 220, 2)
+l2 = lfo(2, 2, 1)
+l3 = lfo(1000, 700, 0.25)
+f = filter(1000, 2)
+
+sound(x).play()
+sound(o).freq:c(l1.freq:m(l2)).e(f).cutoff:m(l3).play()
+
+-- sound(o).freq:chain(l1.freq:mod(l2)).effect(f).cutoff:mod(l3).play()
+
+-- sound(osc(0.1, 440, Saw)).freq
+-- 	:chain(lfo(440, 220, 2).freq:mod(lfo(2, 2, 1)))
+-- 	.effect(filter(1000, 2)).cutoff
+-- 	:mod(lfo(1000, 700, 0.25))
+-- 	.play()

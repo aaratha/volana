@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <functional>
 #include <iostream>
 #include <math.h>
@@ -11,7 +12,13 @@
 #define DEVICE_FORMAT ma_format_f32
 #define DEVICE_CHANNELS 2
 
-enum class OscType : int { Sine = 0, Saw = 1, Square = 2, Triangle = 3 };
+enum class Waveform : int {
+  Sine = 0,
+  Saw = 1,
+  InvSaw = 2,
+  Square = 3,
+  Triangle = 4
+};
 
 // ---------------- Node base ----------------
 
@@ -24,6 +31,12 @@ struct Node {
 
   std::atomic<float> out{0.0f};
   bool audioOut = false; // whether this node contributes to final audio
+  std::atomic<bool> active{true}; // whether update() should run
+};
+
+struct Param {
+  std::atomic<float> *ptr;
+  Node *owner; // optional, used for edges
 };
 
 // ---------------- GraphNode ----------------

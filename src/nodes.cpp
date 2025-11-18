@@ -1,13 +1,23 @@
 #include "nodes.h"
 #include "utils.h"
 
+void ControlNode::addTarget(std::atomic<float> *target) {
+  if (target)
+    targets.push_back(target);
+}
+
+void EffectNode::addInput(std::atomic<float> *input) {
+  if (input)
+    inputs.push_back(input);
+}
+
 std::unique_ptr<Oscillator> Oscillator::init(float amp_, float freq_,
-                                             OscType type_) {
+                                             Waveform type_) {
   auto osc = std::make_unique<Oscillator>();
   osc->amp.store(amp_);
   osc->freq.store(freq_);
   osc->type = type_;
-  osc->audioOut = true;
+  osc->audioOut = false;
   std::cout << "new Oscillator: amp=" << amp_ << " freq=" << freq_ << std::endl;
   return osc;
 }
@@ -24,16 +34,19 @@ void Oscillator::update() {
   float p = phase.load() / (2.0f * M_PI); // normalized 0..1
 
   switch (type) {
-  case OscType::Sine:
+  case Waveform::Sine:
     value = sinf(phase.load());
     break;
-  case OscType::Saw:
+  case Waveform::Saw:
     value = 2.0f * p - 1.0f; // ramps from -1 to 1
     break;
-  case OscType::Square:
+  case Waveform::InvSaw:
+    value = 1.0f - 2.0f * p; // ramps from -1 to 1
+    break;
+  case Waveform::Square:
     value = (p < 0.5f) ? 1.0f : -1.0f;
     break;
-  case OscType::Triangle:
+  case Waveform::Triangle:
     value = 4.0f * fabs(p - 0.5f) - 1.0f;
     break;
   }
@@ -72,7 +85,7 @@ std::unique_ptr<Filter> Filter::init(float cutoff_, float q_) {
   auto filter = std::make_unique<Filter>();
   filter->cutoff.store(cutoff_);
   filter->q.store(q_);
-  filter->audioOut = true;
+  filter->audioOut = false;
   std::cout << "new Filter: cutoff=" << cutoff_ << " q=" << q_ << std::endl;
   return filter;
 }

@@ -14,6 +14,8 @@ void AudioManager::dataCallback(ma_device *pDevice, void *pOutput,
   for (ma_uint32 i = 0; i < frameCount; ++i) {
     // Update each node in topo order
     for (auto *node : sortedNodes) {
+      if (!node->data->active.load(std::memory_order_relaxed))
+        continue;
       node->data->update();
     }
 
@@ -21,7 +23,8 @@ void AudioManager::dataCallback(ma_device *pDevice, void *pOutput,
 
     float sample = 0.0f;
     for (auto *node : sortedNodes) {
-      if (node->data->audioOut) {
+      if (node->data->audioOut &&
+          node->data->active.load(std::memory_order_relaxed)) {
         sample += node->data->out.load(std::memory_order_relaxed);
       }
     }

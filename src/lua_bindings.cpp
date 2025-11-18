@@ -3,13 +3,50 @@
 #include "audio.h"
 #include "nodes.h"
 
+namespace {
+
+Node *lua_check_node(lua_State *L, int index) {
+  if (luaL_testudata(L, index, "Oscillator")) {
+    auto **osc = (Oscillator **)luaL_checkudata(L, index, "Oscillator");
+    return *osc;
+  }
+
+  if (luaL_testudata(L, index, "Filter")) {
+    auto **filter = (Filter **)luaL_checkudata(L, index, "Filter");
+    return *filter;
+  }
+
+  if (luaL_testudata(L, index, "LFO")) {
+    auto **lfo = (LFO **)luaL_checkudata(L, index, "LFO");
+    return *lfo;
+  }
+
+  return nullptr;
+}
+
+ControlNode *lua_check_control_node(lua_State *L, int index) {
+  Node *node = lua_check_node(L, index);
+  if (auto *control = dynamic_cast<ControlNode *>(node))
+    return control;
+  return nullptr;
+}
+
+EffectNode *lua_check_effect_node(lua_State *L, int index) {
+  Node *node = lua_check_node(L, index);
+  if (auto *effect = dynamic_cast<EffectNode *>(node))
+    return effect;
+  return nullptr;
+}
+
+} // namespace
+
 int lua_create_oscillator(lua_State *L) {
   int nargs = lua_gettop(L);
 
   // Default values
   float amp = 1.0f;
   float freq = 440.0f;
-  OscType type = OscType::Sine;
+  Waveform type = Waveform::Sine;
 
   if (nargs >= 1) {
     if (lua_istable(L, 1)) {
@@ -25,7 +62,7 @@ int lua_create_oscillator(lua_State *L) {
 
       lua_getfield(L, 1, "type"); // get table field "type"
       if (lua_isnumber(L, -1)) {
-        type = static_cast<OscType>(lua_tointeger(L, -1)); // cast to OscType
+        type = static_cast<Waveform>(lua_tointeger(L, -1)); // cast to OscType
       }
       lua_pop(L, 1);
 
@@ -34,7 +71,7 @@ int lua_create_oscillator(lua_State *L) {
       if (nargs >= 2 && lua_isnumber(L, 2))
         freq = lua_tonumber(L, 2);
       if (nargs >= 3 && lua_isnumber(L, 3))
-        type = static_cast<OscType>(lua_tointeger(L, 3));
+        type = static_cast<Waveform>(lua_tointeger(L, 3));
     } else {
       return luaL_error(L, "Expected table or numbers as arguments");
     }
@@ -152,12 +189,22 @@ int lua_osc_index(lua_State *L) {
   const char *key = lua_tostring(L, 2);
 
   if (strcmp(key, "freq") == 0) {
-    lua_pushlightuserdata(L, &osc->freq); // push as lightuserdata
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &osc->freq;
+    p->owner = osc;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
     return 1;
   }
 
   if (strcmp(key, "amp") == 0) {
-    lua_pushlightuserdata(L, &osc->amp);
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &osc->amp;
+    p->owner = osc;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
     return 1;
   }
 
@@ -168,7 +215,17 @@ int lua_osc_index(lua_State *L) {
 
   // method access
   if (strcmp(key, "pipe") == 0) {
-    lua_pushcfunction(L, lua_osc_pipe);
+    lua_pushcfunction(L, lua_node_pipe);
+    return 1;
+  }
+
+  if (strcmp(key, "set_audio_out") == 0) {
+    lua_pushcfunction(L, lua_node_set_audio_out);
+    return 1;
+  }
+
+  if (strcmp(key, "set_processing") == 0) {
+    lua_pushcfunction(L, lua_node_set_processing);
     return 1;
   }
 
@@ -184,23 +241,37 @@ int lua_lfo_index(lua_State *L) {
   // field access
 
   if (strcmp(key, "base") == 0) {
-    lua_pushlightuserdata(L, &lfo->base); // return atomic pointer
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &lfo->base;
+    p->owner = lfo;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
     return 1;
   }
 
   if (strcmp(key, "amp") == 0) {
-    lua_pushlightuserdata(L, &lfo->amp); // return atomic pointer
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &lfo->amp;
+    p->owner = lfo;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
     return 1;
   }
 
   if (strcmp(key, "freq") == 0) {
-    lua_pushlightuserdata(L, &lfo->freq); // return atomic pointer
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &lfo->freq;
+    p->owner = lfo;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
     return 1;
   }
 
-  // method access
-  if (strcmp(key, "mod") == 0) {
-    lua_pushcfunction(L, lua_lfo_mod);
+  if (strcmp(key, "set_processing") == 0) {
+    lua_pushcfunction(L, lua_node_set_processing);
     return 1;
   }
 
@@ -216,103 +287,91 @@ int lua_filter_index(lua_State *L) {
   // field access
 
   if (strcmp(key, "cutoff") == 0) {
-    lua_pushlightuserdata(L, &filter->cutoff); // return atomic pointer
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &filter->cutoff;
+    p->owner = filter;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
     return 1;
   }
 
   if (strcmp(key, "q") == 0) {
-    lua_pushlightuserdata(L, &filter->q); // return atomic pointer
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &filter->q;
+    p->owner = filter;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
+    return 1;
+  }
+
+  if (strcmp(key, "pipe") == 0) {
+    lua_pushcfunction(L, lua_node_pipe);
+    return 1;
+  }
+
+  if (strcmp(key, "set_audio_out") == 0) {
+    lua_pushcfunction(L, lua_node_set_audio_out);
+    return 1;
+  }
+
+  if (strcmp(key, "set_processing") == 0) {
+    lua_pushcfunction(L, lua_node_set_processing);
     return 1;
   }
 
   return 0; // key not found
 }
 
-int lua_lfo_mod(lua_State *L) {
-  // 1. Get LFO
-  LFO **lfo_ud = (LFO **)luaL_checkudata(L, 1, "LFO");
-  LFO *lfo = *lfo_ud;
+int lua_node_pipe(lua_State *L) {
+  Node *source = lua_check_node(L, 1);
+  if (!source)
+    return luaL_error(L, "pipe() expects an audio node source");
 
-  // 2. Get target Node (Oscillator, LFO, or anything with atomic<float>
-  // members)
-  Node *node = nullptr;
+  EffectNode *effect = lua_check_effect_node(L, 2);
+  if (!effect)
+    return luaL_error(L, "pipe() requires an effect node destination");
 
-  if (luaL_testudata(L, 2, "Oscillator")) {
-    Oscillator **osc_ud = (Oscillator **)luaL_checkudata(L, 2, "Oscillator");
-    node = *osc_ud;
-  } else if (luaL_testudata(L, 2, "LFO")) {
-    LFO **lfo_ud = (LFO **)luaL_checkudata(L, 2, "LFO");
-    node = *lfo_ud;
-  } else if (luaL_testudata(L, 2, "Filter")) {
-    Filter **filter_ud = (Filter **)luaL_checkudata(L, 2, "Filter");
-    node = *filter_ud;
-  } else {
-    return luaL_error(L, "Expected Oscillator or LFO");
-  }
+  effect->addInput(&source->out);
+  source->audioOut = false;
 
-  // 3. Get parameter name
-  const char *paramName = luaL_checkstring(L, 3);
+  if (source->owner && effect->owner)
+    am.addEdge(source->owner, effect->owner);
 
-  // 4. Find the target parameter
-  std::atomic<float> *target = nullptr;
-
-  // Check for known parameters; expand as needed
-  if (auto *osc = dynamic_cast<Oscillator *>(node)) {
-    if (strcmp(paramName, "freq") == 0)
-      target = &osc->freq;
-    else if (strcmp(paramName, "amp") == 0)
-      target = &osc->amp;
-  } else if (auto *otherLFO = dynamic_cast<LFO *>(node)) {
-    if (strcmp(paramName, "freq") == 0)
-      target = &otherLFO->freq;
-    else if (strcmp(paramName, "amp") == 0)
-      target = &otherLFO->amp;
-    else if (strcmp(paramName, "base") == 0)
-      target = &otherLFO->base;
-  } else if (auto *filter = dynamic_cast<Filter *>(node)) {
-    if (strcmp(paramName, "cutoff") == 0)
-      target = &filter->cutoff;
-    else if (strcmp(paramName, "q") == 0)
-      target = &filter->q;
-  }
-
-  if (!target)
-    return luaL_error(L, "Unknown parameter '%s' for this node", paramName);
-
-  // 5. Add to LFO's target list
-  lfo->targets.push_back(target);
-
-  // 6. Add edge in the graph for topological update order
-  if (lfo->owner && node->owner)
-    am.addEdge(lfo->owner, node->owner);
-
-  return 0; // no return values
-}
-
-int lua_osc_pipe(lua_State *L) {
-  // 1. Get the oscillator userdata
-  Oscillator **osc_ud = (Oscillator **)luaL_checkudata(L, 1, "Oscillator");
-  Oscillator *osc = *osc_ud;
-
-  // 2. Get the filter userdata
-  Filter **filter_ud = (Filter **)luaL_checkudata(L, 2, "Filter");
-  Filter *filter = *filter_ud;
-
-  if (!osc || !filter)
-    return luaL_error(L, "Expected Oscillator and Filter");
-
-  // 3. Add oscillator output to filter inputs
-  filter->inputs.push_back(&osc->out);
-
-  // 4. Optionally mute oscillator direct output
-  osc->audioOut = false;
-
-  // 5. Add dependency in graph for topological order
-  am.addEdge(osc->owner, filter->owner);
-
-  // 6. Return the filter so you can chain pipes in Lua: osc:pipe(f1):pipe(f2)
   lua_pushvalue(L, 2);
   return 1;
+}
+
+int lua_node_set_audio_out(lua_State *L) {
+  Node *node = lua_check_node(L, 1);
+  if (!node)
+    return luaL_error(L, "set_audio_out expects a node");
+
+  bool enabled = lua_toboolean(L, 2);
+  node->audioOut = enabled;
+  return 0;
+}
+
+int lua_node_set_processing(lua_State *L) {
+  Node *node = lua_check_node(L, 1);
+  if (!node)
+    return luaL_error(L, "set_processing expects a node");
+
+  bool enabled = lua_toboolean(L, 2);
+  node->active.store(enabled, std::memory_order_relaxed);
+  if (!enabled) {
+    node->out.store(0.0f, std::memory_order_relaxed);
+
+    if (auto *osc = dynamic_cast<Oscillator *>(node)) {
+      osc->phase.store(0.0f, std::memory_order_relaxed);
+    } else if (auto *filter = dynamic_cast<Filter *>(node)) {
+      filter->x1 = filter->x2 = 0.0f;
+      filter->y1 = filter->y2 = 0.0f;
+    }
+  }
+
+  return 0;
 }
 
 int lua_osc_newindex(lua_State *L) {
@@ -335,7 +394,7 @@ int lua_osc_newindex(lua_State *L) {
 
   if (strcmp(key, "type") == 0) {
     int t = luaL_checkinteger(L, 3);
-    osc->type = static_cast<OscType>(t);
+    osc->type = static_cast<Waveform>(t);
     return 0;
   }
 
@@ -391,6 +450,56 @@ int lua_filter_newindex(lua_State *L) {
   }
 
   return luaL_error(L, "Unknown field %s", key);
+}
+
+int lua_param_mod(lua_State *L) {
+  Param *param = (Param *)luaL_checkudata(L, 1, "Param");
+
+  auto resolveControl = [&](int index) -> ControlNode * {
+    if (luaL_testudata(L, index, "Param")) {
+      Param *controllerParam = (Param *)luaL_checkudata(L, index, "Param");
+      if (!controllerParam->owner)
+        luaL_error(L, "Param argument %d has no owner", index);
+
+      if (auto *control = dynamic_cast<ControlNode *>(controllerParam->owner))
+        return control;
+
+      luaL_error(L, "Param argument %d is not owned by a control node", index);
+    }
+
+    if (auto *control = lua_check_control_node(L, index))
+      return control;
+
+    luaL_error(L, "Expected control node or Param as controller");
+    return nullptr;
+  };
+
+  ControlNode *control = resolveControl(2);
+
+  control->addTarget(param->ptr);
+
+  if (control->owner && param->owner && param->owner->owner)
+    am.addEdge(control->owner, param->owner->owner);
+
+  lua_pushvalue(L, 1); // return param so you can do .freq:m(l1):m(l2)
+  return 1;
+}
+
+int lua_param_chain(lua_State *L) { return lua_param_mod(L); }
+
+int lua_param_effect(lua_State *L) {
+  Param *param = (Param *)luaL_checkudata(L, 1, "Param");
+  EffectNode *effect = lua_check_effect_node(L, 2);
+  if (!effect)
+    return luaL_error(L, "Expected effect node (e.g. Filter)");
+
+  effect->addInput(param->ptr);
+
+  if (effect->owner && param->owner && param->owner->owner)
+    am.addEdge(param->owner->owner, effect->owner);
+
+  lua_pushvalue(L, 1);
+  return 1;
 }
 
 void register_oscillator(lua_State *L) {
@@ -452,15 +561,42 @@ void register_osc_types(lua_State *L) {
   //
   // lua_setglobal(L, "OscType"); // assign table to global `OscType`
 
-  lua_pushinteger(L, static_cast<int>(OscType::Sine));
+  lua_pushinteger(L, static_cast<int>(Waveform::Sine));
   lua_setglobal(L, "Sine");
 
-  lua_pushinteger(L, static_cast<int>(OscType::Saw));
+  lua_pushinteger(L, static_cast<int>(Waveform::Saw));
   lua_setglobal(L, "Saw");
 
-  lua_pushinteger(L, static_cast<int>(OscType::Square));
+  lua_pushinteger(L, static_cast<int>(Waveform::InvSaw));
+  lua_setglobal(L, "InvSaw");
+
+  lua_pushinteger(L, static_cast<int>(Waveform::Square));
   lua_setglobal(L, "Square");
 
-  lua_pushinteger(L, static_cast<int>(OscType::Triangle));
+  lua_pushinteger(L, static_cast<int>(Waveform::Triangle));
   lua_setglobal(L, "Triangle");
+}
+
+void register_param(lua_State *L) {
+  luaL_newmetatable(L, "Param");
+
+  lua_pushvalue(L, -1);
+  lua_setfield(L, -2, "__index");
+
+  lua_pushcfunction(L, lua_param_mod);
+  lua_setfield(L, -2, "m");
+  lua_pushcfunction(L, lua_param_mod);
+  lua_setfield(L, -2, "mod");
+
+  lua_pushcfunction(L, lua_param_chain);
+  lua_setfield(L, -2, "c");
+  lua_pushcfunction(L, lua_param_chain);
+  lua_setfield(L, -2, "chain");
+
+  lua_pushcfunction(L, lua_param_effect);
+  lua_setfield(L, -2, "e");
+  lua_pushcfunction(L, lua_param_effect);
+  lua_setfield(L, -2, "effect");
+
+  lua_pop(L, 1);
 }
