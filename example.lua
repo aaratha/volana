@@ -11,42 +11,100 @@ Osc1:pipe(Filter)
 Lfo2 = LFO(1000, 700, 0.25)
 Lfo2:mod(Filter, "cutoff")
 
--- local osc1 = Oscillator({ freq = 440, amp = 0.1, type = Saw }) --, type = "sine" })
--- local osc2 = Oscillator(0.2, 220)
+-- Osc1 = Oscillator(0.1, 220)
+-- Osc2 = Oscillator(0.1, 440)
+-- Osc3 = Oscillator(0.1, 660)
+-- Lfo1 = LFO(440, 20, 0.5)
+-- Adsr1 = ADSR(0.1, 0.2, 0.3, 0.4)
+-- Fil1 = Filter(1000, 2)
+-- Del1 = Delay(0.25, 0.5) -- rate, feedback
+-- Lfo1:mod(Osc2, "freq")
+-- Adsr1:mod(Fil1, "cutoff")
+-- Adsr1:mod({Osc1, Osc2, Osc3}, "amp")
+-- V1 = ({Osc1, Osc2, Osc3}..Fil1..Del1):voice("o")
 --
--- local lfo1 = LFO(440, 40, 3)
--- lfo1:mod(osc1, "freq")
+-- -- create oscillators, apply control nodes, create voice with piped effects
+-- -- adsr does nothing wihtout pattern
 --
--- local lfo2 = LFO(220, 40, 1)
--- lfo2:mod(osc2, "freq")
+-- Osc4 = Oscillator(0.1, 440, Saw)
+-- Lfo2 = LFO(440, 110, 10)
+-- Rand1 = RandInt(4, 16) -- timing, bounds
+-- Fil2 = Filter(500, 1)
+-- Lfo2:mod(Osc4, "freq")
+-- Rand1:mod(Lfo2, "freq")
+-- V2 = (Osc4..Fil2):voice(nil) -- no pattern symbol, continuous play
 --
--- local lfo3 = LFO(3, 3, 1)
--- lfo3:mod(lfo1, "freq")
+-- Pattern("o o o o [o o]*4"):play() -- or...
+-- p = Pattern("o o o o [o o]*4")
+-- Rand1:trigger(p)
+-- p:play()
+-- V2:play()
 --
--- local lfo4 = LFO(440, 20, 20)
--- lfo4:mod(lfo1, "base")
+-- osc(0.1, 440, Sine)
+-- 	.lfo(440, 110, 2, "freq")
+-- 	.filter(1000, 2)
+-- 	.lfo(1000, 700, 0.25, "cutoff")
+-- 	.adsr(0.1, 0.1, 0.1, 0.1, "amp")
+-- 	.delay(0.5, 1)
+-- 	.play()
 --
--- lfo4.freq = 10
+-- osc(0.1, 440, Sine)
+-- 	:lfo(440, 110, 2, "freq")
+-- 	:lfo(0.1, 0.1, 1, "amp")
+-- 	:adsr(0.1, 0.1, 0.1, 0.1, "amp")
+-- 	.filter(1000, 2)
+-- 	:lfo(1000, 700, 0.25, "cutoff")
+-- 	:adsr(0.1, 0.1, 0.1, 0.1, "amp")
+-- 	.delay(0.5, 1)
+-- 	.play("x") -- .play() to play cont., .play("x") to assing pattern name x and wait for pattern
 --
--- -- filtering
--- local filter = Filter({ cutoff = 1000, q = 6 })
--- osc1:pipe(filter)
+-- a = adsr(0.1, 0.1, 0.1, 0.1)
 --
--- local lfo5 = LFO(500, 400, 1)
--- lfo5:mod(filter, "cutoff")
+-- osc(0.1, 440, Sine)
+-- 	:lfo(440, 110, 2, "freq")
+-- 	:lfo(0.1, 0.1, 1, "amp")
+-- 	:adsr(a, "amp")
+-- 	.filter(1000, 2)
+-- 	:lfo(2, 1, 0.25, "q")
+-- 	:adsr(a, "cutoff")
+-- 	.delay(0.5, 1)
+-- 	.play("x")
 
--- complete usage example
--- -- create a voice
--- arp = Voice({ osc = osc1, pattern = { "C3", "E3", "G3", "B3" } })
+-- osc(0.1, 440, Sine).freq
+-- 	:chain(lfo(440, 110, 2).amp:lfo(0.1, 0.1, 1)).amp
+-- 	:mod(a)
+-- 	.filter(1000, 2).q
+-- 	:lfo(2, 1, 0.25).cutoff
+-- 	:mod(a)
+-- 	.delay(0.5, 1)
+-- 	.play("x")
 --
--- -- add voice to engine
--- add_voice(arp)
+-- o = osc(0.1, 440, Sine)
+-- a = adsr(0.1, 0.1, 0.1, 0.1)
+-- l1 = lfo(440, 110, 2)
+-- l2 = lfo(0.1, 0.1, 1)
+-- l3 = lfo(2, 1, 0.25)
+-- f = filter(1000, 2)
+-- d = delay(0.5, 1)
 --
--- -- live modulation
--- osc1.freq = 440
--- arp:set_adsr(0.01, 0.2, 0.7, 0.3)
+-- sound(o)
+--   .freq:chain(l1
+--     .amp:mod(l2))
+--   .amp:mod(a)
+--   .effect(f)
+--   .q:effect(l3)
+--   .cutoff:mod(a)
+--   .effect(d)
+--   .cue("x")
 --
--- ---------
--- osc1.freq:connect(lfo1)
--- filter.cutoff:connect(env1 * lfo2)
--- macro:connect(lfo1 + env1)
+-- sound(o)
+--   .freq:c(l1
+--     .amp:m(l2))
+--   .amp:m(a)
+--   .e(f)
+--   .q:m(l3)
+--   .cutoff:m(a)
+--   .e(d)
+--   .cue("x")
+--
+-- pattern("x x x x").play()
