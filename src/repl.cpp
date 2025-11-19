@@ -3,6 +3,7 @@
 
 #include <array>
 #include <filesystem>
+#include <fstream>
 #include <system_error>
 
 namespace {
@@ -73,6 +74,12 @@ void REPL::run(const std::string &code) {
 }
 
 void REPL::run_file(const std::string &filename) {
+  std::ifstream in(filename);
+  if (in) {
+    std::cout << "--- " << filename << " ---\n";
+    std::cout << in.rdbuf(); // echo the file
+    std::cout << "\n--- end ---\n";
+  }
   if (luaL_loadfile(L, filename.c_str()) || lua_pcall(L, 0, 0, 0)) {
     std::cerr << "Lua error: " << lua_tostring(L, -1) << std::endl;
     lua_pop(L, 1);

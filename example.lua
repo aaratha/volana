@@ -109,6 +109,14 @@
 --
 -- pattern("x x x x").play()
 
+-- sound(o).freq:chain(l1.freq:mod(l2)).effect(f).cutoff:mod(l3).play()
+
+-- sound(osc(0.1, 440, Saw)).freq
+-- 	:chain(lfo(440, 220, 2).freq:mod(lfo(2, 2, 1)))
+-- 	.effect(filter(1000, 2)).cutoff
+-- 	:mod(lfo(1000, 700, 0.25))
+-- 	.play()
+
 o = osc(0.1, 440, Saw)
 x = osc(0.1, 220, Sine)
 l1 = lfo(440, 220, 2)
@@ -120,11 +128,3 @@ f = filter(1000, 2)
 
 sound(x).play()
 sound(o).freq:c(l1.freq:m(l2)).amp:c(l3.shift:m(l4)).e(f).cutoff:m(l5).play()
-
--- sound(o).freq:chain(l1.freq:mod(l2)).effect(f).cutoff:mod(l3).play()
-
--- sound(osc(0.1, 440, Saw)).freq
--- 	:chain(lfo(440, 220, 2).freq:mod(lfo(2, 2, 1)))
--- 	.effect(filter(1000, 2)).cutoff
--- 	:mod(lfo(1000, 700, 0.25))
--- 	.play()
