@@ -39,6 +39,6 @@ void register_lfo(lua_State *L);
 
 void register_filter(lua_State *L);
 
-void register_osc_types(lua_State *L);
+void register_waveforms(lua_State *L);
 
 void register_param(lua_State *L);

@@ -99,6 +99,8 @@ int lua_create_lfo(lua_State *L) {
   float base = 440.0f;
   float amp = 40.0f;
   float freq = 3.0f;
+  float shift = 0.0f;
+  Waveform type = Waveform::Sine;
 
   if (nargs >= 1) {
     if (lua_istable(L, 1)) {
@@ -116,19 +118,35 @@ int lua_create_lfo(lua_State *L) {
       if (lua_isnumber(L, -1))
         freq = lua_tonumber(L, -1);
       lua_pop(L, 1);
+
+      lua_getfield(L, 1, "shift");
+      if (lua_isnumber(L, -1))
+        shift = lua_tonumber(L, -1);
+      lua_pop(L, 1);
+
+      lua_getfield(L, 1, "type"); // get table field "type"
+      if (lua_isnumber(L, -1)) {
+        type = static_cast<Waveform>(lua_tointeger(L, -1)); // cast to OscType
+      }
+      lua_pop(L, 1);
+
     } else if (lua_isnumber(L, 1)) {
       base = lua_tonumber(L, 1);
-      if (nargs >= 2 && lua_isnumber(L, 2)) {
+      if (nargs >= 2 && lua_isnumber(L, 2))
         amp = lua_tonumber(L, 2);
-        if (nargs >= 3 && lua_isnumber(L, 3))
-          freq = lua_tonumber(L, 3);
-      }
+      if (nargs >= 3 && lua_isnumber(L, 3))
+        freq = lua_tonumber(L, 3);
+      if (nargs >= 4 && lua_isnumber(L, 4))
+        shift = lua_tonumber(L, 4);
+      if (nargs >= 5 && lua_isnumber(L, 5))
+        type = static_cast<Waveform>(lua_tointeger(L, 5));
+
     } else {
       return luaL_error(L, "Expected table or numbers as arguments");
     }
   }
 
-  auto lfo = LFO::init(base, amp, freq);
+  auto lfo = LFO::init(base, amp, freq, shift, type);
 
   LFO **udata = (LFO **)lua_newuserdata(L, sizeof(LFO *));
   *udata = lfo.get();
@@ -267,6 +285,26 @@ int lua_lfo_index(lua_State *L) {
 
     luaL_getmetatable(L, "Param");
     lua_setmetatable(L, -2);
+    return 1;
+  }
+
+  if (strcmp(key, "shift") == 0) {
+    Param *p = (Param *)lua_newuserdata(L, sizeof(Param));
+    p->ptr = &lfo->shift;
+    p->owner = lfo;
+
+    luaL_getmetatable(L, "Param");
+    lua_setmetatable(L, -2);
+    return 1;
+  }
+
+  if (strcmp(key, "type") == 0) {
+    lua_pushinteger(L, static_cast<int>(lfo->type));
+    return 1;
+  }
+
+  if (strcmp(key, "type") == 0) {
+    lua_pushinteger(L, static_cast<int>(lfo->type));
     return 1;
   }
 
@@ -426,6 +464,23 @@ int lua_lfo_newindex(lua_State *L) {
     return 0;
   }
 
+  if (strcmp(key, "shift") == 0) {
+    lfo->shift = luaL_checknumber(L, 3);
+    return 0;
+  }
+
+  if (strcmp(key, "type") == 0) {
+    int t = luaL_checkinteger(L, 3);
+    lfo->type = static_cast<Waveform>(t);
+    return 0;
+  }
+
+  if (strcmp(key, "type") == 0) {
+    int t = luaL_checkinteger(L, 3);
+    lfo->type = static_cast<Waveform>(t);
+    return 0;
+  }
+
   return luaL_error(L, "Unknown field %s", key);
 }
 
@@ -543,7 +598,7 @@ void register_filter(lua_State *L) {
   lua_pop(L, 1); // pop metatable
 }
 
-void register_osc_types(lua_State *L) {
+void register_waveforms(lua_State *L) {
   lua_newtable(L); // create table
 
   // if i want to force OscType::...

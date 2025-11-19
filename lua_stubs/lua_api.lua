@@ -2,8 +2,14 @@
 Sine = 0
 Saw = 1
 InvSaw = 2
-Square = 2
-Triangle = 3
+Square = 3
+Triangle = 4
+
+---@type number
+PI = math.pi
+
+---@type number
+TAU = math.pi * 2
 
 ---@class Oscillator
 ---@field freq lightuserdata
@@ -13,9 +19,11 @@ Triangle = 3
 Oscillator = {}
 
 ---@class LFO
----@field freq lightuserdata
+---@field base lightuserdata
 ---@field amp lightuserdata
----@field base number
+---@field freq lightuserdata
+---@field shift lightuserdata
+---@field type integer One of Sine, Saw, InvSaw, Square, Triangle
 LFO = {}
 
 ---@class Filter

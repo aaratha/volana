@@ -15,8 +15,7 @@ std::string locate_runtime_script() {
 
   const std::array<fs::path, 3> candidates = {
       fs::current_path() / "lua" / "runtime.lua",
-      fs::current_path() / "runtime.lua",
-      sourceRoot / "lua" / "runtime.lua"};
+      fs::current_path() / "runtime.lua", sourceRoot / "lua" / "runtime.lua"};
 
   for (const auto &candidate : candidates) {
     std::error_code ec;
@@ -53,7 +52,7 @@ void REPL::init() {
   register_oscillator(L);
   register_lfo(L);
   register_filter(L);
-  register_osc_types(L);
+  register_waveforms(L);
   register_param(L);
 
   load_runtime(L);

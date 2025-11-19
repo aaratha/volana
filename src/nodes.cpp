@@ -54,15 +54,18 @@ void Oscillator::update() {
   out.store(amp.load() * value);
 }
 
-std::unique_ptr<LFO> LFO::init(float base_, float amp_, float freq_) {
+std::unique_ptr<LFO> LFO::init(float base_, float amp_, float freq_,
+                               float shift_, Waveform type_) {
   auto lfo = std::make_unique<LFO>();
   lfo->base.store(base_);
   lfo->amp.store(amp_);
   lfo->freq.store(freq_);
+  lfo->shift.store(shift_);
+  lfo->type = type_;
   lfo->audioOut = false;
 
   std::cout << "new LFO: base =" << base_ << " amp=" << amp_
-            << " freq=" << freq_ << std::endl;
+            << " freq=" << freq_ << " shift=" << shift_ << std::endl;
   return lfo;
 }
 
@@ -75,7 +78,37 @@ void LFO::update() {
   }
   phase.store(newPhase);
 
-  out.store(base.load() + amp.load() * sinf(phase.load()));
+  float adjustedPhase = phase.load(std::memory_order_relaxed) +
+                        shift.load(std::memory_order_relaxed);
+
+  adjustedPhase = fmodf(adjustedPhase, 2.0f * M_PI);
+  if (adjustedPhase < 0.0f)
+    adjustedPhase += 2.0f * M_PI;
+
+  float value = 0.0f;
+  float p = adjustedPhase / (2.0f * M_PI); // normalized 0..1
+
+  switch (type) {
+  case Waveform::Sine:
+    value = sinf(adjustedPhase);
+    break;
+  case Waveform::Saw:
+    value = 2.0f * p - 1.0f; // ramps from -1 to 1
+    break;
+  case Waveform::InvSaw:
+    value = 1.0f - 2.0f * p; // ramps from -1 to 1
+    break;
+  case Waveform::Square:
+    value = (p < 0.5f) ? 1.0f : -1.0f;
+    break;
+  case Waveform::Triangle:
+    value = 4.0f * fabs(p - 0.5f) - 1.0f;
+    break;
+  }
+
+  float result = base.load(std::memory_order_relaxed) +
+                 amp.load(std::memory_order_relaxed) * value;
+  out.store(result, std::memory_order_relaxed);
   for (auto *t : targets) {
     t->store(out.load(std::memory_order_relaxed), std::memory_order_relaxed);
   }

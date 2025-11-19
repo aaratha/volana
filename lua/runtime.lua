@@ -216,6 +216,9 @@ function filter(...)
 	return Filter(...)
 end
 
+PI = math.pi
+TAU = math.pi * 2
+
 return {
 	sound = sound,
 	osc = osc,

@@ -25,15 +25,18 @@ struct Oscillator : Node {
 };
 
 struct LFO : ControlNode {
+  std::atomic<float> base{0.0f};
   std::atomic<float> amp{1.0f};
   std::atomic<float> freq{5.0f};
+  std::atomic<float> shift{0.0f};
   std::atomic<float> phase{0.0f};
-  std::atomic<float> base{0.0f};
+  Waveform type{Waveform::Sine};
 
   void update() override;
 
-  static std::unique_ptr<LFO> init(float base_ = 0.0f, float amp_ = 1.0f,
-                                   float freq_ = 5.0f);
+  static std::unique_ptr<LFO>
+  init(float base_ = 0.0f, float amp_ = 1.0f, float freq_ = 5.0f,
+       float shift_ = 0.0f, Waveform type_ = Waveform::Sine);
 };
 
 struct Filter : EffectNode {

@@ -113,11 +113,13 @@ o = osc(0.1, 440, Saw)
 x = osc(0.1, 220, Sine)
 l1 = lfo(440, 220, 2)
 l2 = lfo(2, 2, 1)
-l3 = lfo(1000, 700, 0.25)
+l3 = lfo(0.05, 0.05, 2, math.pi / 2, Square)
+l4 = lfo(PI / 2, PI / 2, 0.25, 0, Sine)
+l5 = lfo(1000, 700, 0.25)
 f = filter(1000, 2)
 
 sound(x).play()
-sound(o).freq:c(l1.freq:m(l2)).e(f).cutoff:m(l3).play()
+sound(o).freq:c(l1.freq:m(l2)).amp:c(l3.shift:m(l4)).e(f).cutoff:m(l5).play()
 
 -- sound(o).freq:chain(l1.freq:mod(l2)).effect(f).cutoff:mod(l3).play()
 
